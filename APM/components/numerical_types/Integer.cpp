@@ -498,6 +498,23 @@ namespace Olly {
             return Integer(SIGN::undef);
         }
 
+        Integer Integer::root(Size b) const {
+            
+            if (is_finite()) {
+
+                Integer a(*this);
+
+                a._number = _number.root(b);
+
+                // Note the power is enacted on the whole number.
+                // Therefore no sign manipulation is needed.
+
+                return a;
+            }
+
+            return Integer(SIGN::undef);
+        }
+
         Integer Integer::gcd(Integer b) const {
 
             sys_float comp = compare(b);

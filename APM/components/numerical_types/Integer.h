@@ -106,8 +106,9 @@ namespace Olly {
 
             void div_rem(const Integer& other, Integer& qot, Integer& rem) const;
 
-            Integer pow(Size    b) const;
-            Integer gcd(Integer b) const;
+            Integer pow( Size    b) const;
+            Integer root(Size    b) const;
+            Integer gcd (Integer b) const;
 
             Integer sqrt() const;
             Integer  abs() const;

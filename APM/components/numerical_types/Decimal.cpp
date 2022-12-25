@@ -27,210 +27,77 @@
 namespace Olly {
     namespace APM {
 
-        const Integer Decimal::ONE = Integer(1);
-        const Integer Decimal::TWO = Integer(2);
-        const Integer Decimal::TEN = Integer(10);
-
-        sys_int Decimal::scale() {
-            return decimal_scale();
+        Decimal::Decimal() : _number() {
         }
 
-        void Decimal::scale(const sys_int& scale) {
-
-            sys_int scl = (scale >= MIN_SCALE) ? scale : MIN_SCALE;
-            scl = (scl <= MAX_SCALE) ? scl : MAX_SCALE;
-
-            if (scale_not_configured()) {
-
-                scale_not_configured() = false;
-                decimal_scale() = scl;
-                denominator() = Decimal::TEN.pow(scl);
-
-                integer_e();
-                integer_pi();
-                integer_ln2();
-            }
-        }
-
-        Text Decimal::rounding_mode() {
-
-            switch (round_mode()) {
-
-            case(ROUNDING_MODE::half_up):
-                return "half_up";
-
-            case(ROUNDING_MODE::half_down):
-                return "half_down";
-
-            case(ROUNDING_MODE::half_even):
-                return "half_even";
-
-            case(ROUNDING_MODE::half_odd):
-                return "half_odd";
-
-            case(ROUNDING_MODE::ceil):
-                return "ceil";
-
-            case(ROUNDING_MODE::floor):
-                return "floor";
-
-            case(ROUNDING_MODE::away_from_zero):
-                return "away_from_zero";
-            }
-
-            return "toward_zero";
-        }
-
-        void Decimal::rounding_mode(const Text& mode) {
-
-            if (mode == "half_up") {
-                round_mode() = ROUNDING_MODE::half_up;
-            }
-
-            else if (mode == "half_down") {
-                round_mode() = ROUNDING_MODE::half_down;
-            }
-
-            else if (mode == "half_even") {
-                round_mode() = ROUNDING_MODE::half_even;
-            }
-
-            else if (mode == "half_odd") {
-                round_mode() = ROUNDING_MODE::half_odd;
-            }
-
-            else if (mode == "ceil") {
-                round_mode() = ROUNDING_MODE::ceil;
-            }
-
-            else if (mode == "floor") {
-                round_mode() = ROUNDING_MODE::floor;
-            }
-
-            else if (mode == "away_from_zero") {
-                round_mode() = ROUNDING_MODE::away_from_zero;
-            }
-
-            else {
-                ROUNDING_MODE::toward_zero;
-            }
-        }
-
-        Integer Decimal::decimal_denominator() {
-            return denominator();
-        }
-
-        Decimal Decimal::e() {
-            return decimal_e();
-        }
-
-        Decimal Decimal::pi() {
-            return decimal_pi();
-        }
-
-        Decimal Decimal::ln2() {
-            return decimal_ln2();
-        }
-
-        Boolean& Decimal::scale_not_configured() {
-
-            static Boolean truth = true;
-
-            return truth;
-        }
-
-        Size& Decimal::decimal_scale() {
-
-            static Size scale = DEF_SCALE;
-
-            return scale;
-        }
-
-        Integer& Decimal::denominator() {
-
-            static Integer denom = Decimal::TEN;
-
-            return denom;
-        }
-
-        Integer& Decimal::integer_pi() {
-
-            static Integer pi(PI_STRING.substr(0, decimal_scale() + 1));
-
-            return pi;
-        }
-
-        Integer& Decimal::integer_e() {
-
-            static Integer e(E_STRING.substr(0, decimal_scale() + 1));
-
-            return e;
-        }
-
-        Integer& Decimal::integer_ln2() {
-
-            static Integer ln2(LN2_STRING.substr(0, decimal_scale()));
-
-            return ln2;
-        }
-
-        Decimal& Decimal::decimal_e() {
-
-            static Decimal e;
-
-            e._number = integer_e();
-
-            return e;
-        }
-
-        Decimal& Decimal::decimal_pi() {
-
-            static Decimal pi;
-
-            pi._number = integer_pi();
-
-            return pi;
-        }
-
-        Decimal& Decimal::decimal_ln2() {
-
-            static Decimal ln2;
-
-            ln2._number = integer_ln2();
-
-            return ln2;
-        }
-
-        Decimal::ROUNDING_MODE& Decimal::round_mode() {
-
-            ROUNDING_MODE mode = ROUNDING_MODE::half_even;
-
-            return mode;
-        }
-
-        Decimal::Decimal() : _number(), _scale(scale()) {
-        }
-
-        Decimal::Decimal(sys_int value) : _number(value), _scale(scale()) {
+        Decimal::Decimal(sys_int value) : _number(value) {
             _number *= denominator();
         }
 
-        Decimal::Decimal(const Integer& value) : _number(value), _scale(scale()) {
+        Decimal::Decimal(const Integer& value) : _number(value) {
             _number *= denominator();
         }
 
-        Decimal::Decimal(const Whole_Number& value) : _number(value), _scale(scale()) {
+        Decimal::Decimal(const Whole_Number& value) : _number(value) {
             _number *= denominator();
         }
 
-        Decimal::Decimal(Text value) : _number(), _scale(scale()) {
+        Decimal::Decimal(Text value) : _number() {
             if (scale_not_configured()) {
                 scale(Decimal::DEF_SCALE);
             }
 
             value = to_lower(value);
 
-            set_decimal_text(value);
+            if (value.size() > 1) {
+
+                if (value.find('.') != Text::npos) {
+                    set_decimal(value);
+                }
+
+                else if (value.find('/') != Text::npos) {
+                    set_rational(value);
+                }
+
+                else if (value[0] == '0' && std::isalpha(value[1])) {
+
+                    if (value[0] == '0' && value[1] == 'u') {
+                        value[0] = ' ';
+                        value[1] = ' ';
+                        set_whole(value);
+                    }
+
+                    else if (value[0] == '0' && value[1] == 'b') {
+                        value[0] = ' ';
+                        value[1] = ' ';
+                        set_binary(value);
+                    }
+
+                    else if (value[0] == '0' && value[1] == 'x') {
+                        value[0] = ' ';
+                        value[1] = ' ';
+                        set_heximal(value);
+                    }
+
+                    else if (value[0] == '0' && value[1] == 'o') {
+                        value[0] = ' ';
+                        value[1] = ' ';
+                        set_octal(value);
+                    }
+
+                    else {
+                        set_integer(value);
+                    }
+                }
+
+                else {
+                    set_integer(value);
+                }
+            }
+
+            else {
+                set_integer(value);
+            }
         }
 
         Decimal::~Decimal() {
@@ -260,6 +127,26 @@ namespace Olly {
             return _number.is_zero();
         }
 
+        Boolean Decimal::is_undefined() const {
+            return _number.is_undefined();
+        }
+
+        Boolean Decimal::is_defined() const {
+            return _number.is_defined();
+        }
+
+        Boolean Decimal::is_nan() const {
+            return _number.is_nan();
+        }
+
+        Boolean Decimal::is_finite() const {
+            return _number.is_finite();
+        }
+
+        Boolean Decimal::is_infinite() const {
+            return _number.is_infinite();
+        }
+
         Boolean Decimal::operator==(const Decimal& b) const {
             return compare(b) == 0;
         }
@@ -286,28 +173,10 @@ namespace Olly {
 
         sys_float Decimal::compare(const Decimal& b) const {
 
-            if (_scale != scale()) {
-
-                return update_scale_copy().compare(b);
-            }
-
-            if (b._scale != scale()) {
-                return compare(b.update_scale_copy());
-            }
-
             return _number.compare(b._number);
         }
 
         Decimal& Decimal::operator+=(const Decimal& b) {
-
-            if (b._scale != scale()) {
-                return operator+=(b.update_scale_copy());
-            }
-
-            if (_scale != scale()) {
-
-                update_scale();
-            }
 
             _number += b._number;
 
@@ -320,15 +189,6 @@ namespace Olly {
 
         Decimal& Decimal::operator*=(const Decimal& b) {
 
-            if (b._scale != scale()) {
-                return operator*=(b.update_scale_copy());
-            }
-
-            if (_scale != scale()) {
-
-                update_scale();
-            }
-
             _number *= b._number;
 
             _number /= denominator();
@@ -337,15 +197,6 @@ namespace Olly {
         }
 
         Decimal& Decimal::operator/=(const Decimal& b) {
-
-            if (b._scale != scale()) {
-                return operator/=(b.update_scale_copy());
-            }
-
-            if (_scale != scale()) {
-
-                update_scale();
-            }
 
             _number *= denominator();
 
@@ -421,38 +272,11 @@ namespace Olly {
 
             a._number = -a._number;
 
-            if (a._scale != scale()) {
-                a.update_scale();
-            }
-
             return a;
         }
 
         void Decimal::div_rem(const Decimal& b, Decimal& qot, Decimal& rem) const {
-
-            if (b._scale != scale()) {
-                return div_rem(b.update_scale_copy(), qot, rem);
-            }
-
-            if (_scale != scale()) {
-
-                return update_scale_copy().div_rem(b, qot, rem);
-            }
-
             (_number * denominator()).div_rem(b._number, qot._number, rem._number);
-        }
-
-        void Decimal::num_den(Decimal& num, Decimal& den) const {
-            _number.div_rem(denominator(), num._number, den._number);
-        }
-
-        Decimal Decimal::pow(Size b) const {
-
-            Decimal a;
-
-            a._number = _number.pow(b);
-
-            return a;
         }
 
         Decimal Decimal::abs() const {
@@ -460,7 +284,6 @@ namespace Olly {
             Decimal a;
 
             a._number = _number.abs();
-            a._scale = _scale;
 
             return a;
         }
@@ -526,71 +349,92 @@ namespace Olly {
             return a;
         }
 
-        /*Decimal Decimal::factorial() const {
+        Decimal Decimal::gcd(const Decimal& b) const {
+            
+            if (is_defined() && b.is_defined()) {
 
-            Integer q, r;
-            _number.div_rem(denominator(), q, r);
+                Decimal a(*this);
 
-            if (!r.is()) {
-                Integer a = q;
-                Integer b = 1;
+                a._number = a._number.gcd(b._number);
 
-                while (a > ONE) {
-                    b *= a;
-                    a -= ONE;
+                return a;
+            }
+
+            return Integer::UNDEF;
+        }
+
+        Decimal Decimal::pow(const Decimal& b) const {
+
+            if (is_defined() && b.is_defined()) {
+
+                Size n = b.to_integral<Size>();
+
+                if (n == 2) {
+                    Decimal a = *this;
+                    return a * a;
                 }
 
-                return Decimal(b);
+                if (n == 1) {
+                    return *this;
+                }
+
+                if (b == 0) {
+                    return 1;
+                }
+
+                Decimal a = *this;
+                Decimal res = 1;
+
+                while (n) {
+
+                    if (n & 1) {
+
+                        res *= a;
+                    }
+
+                    n >>= 1;
+
+                    if (n) {
+                        a *= a;
+                    }
+                }
+
+                return res;
             }
 
-            Decimal num, den;
-            num_den(num, den);
-
-            q = num._number;
-            r = den._number;
-
-            Integer n = 1;
-            Integer d = 1;
-
-            while (q > ONE) {
-                n *= q;
-                d *= r;
-                q -= den._number;
-            }
-
-            Decimal r;
-            r._number = ((n * denominator()) / d) * integer_pi().sqrt();
-
-            return r;
-        }*/
-
-        Text Decimal::sign() const {
-            return _number.sign();
+            return Integer::UNDEF;
         }
 
-        Text Decimal::to_string() const {
-            return to_string(10, -1);
+        Decimal Decimal::root(const Decimal& b) const {
+
+            // e^(ln(*this)/b) - Will need to see if this is faster, in the future.
+
+            if (is_defined() && b.is_defined()) {
+
+                Size n = b.to_integral<Size>();
+
+                if (n > MAX_SCALE || is_negative()) {
+                    return Integer::UNDEF;
+                }
+
+                Decimal a = *this * denominator().pow(n - 1);
+
+                a._number = a._number.root(n);
+
+                return a;
+            }
+
+            return Integer::UNDEF;
         }
 
-        Text Decimal::to_string(Size base, sys_int sign) const {
+        Decimal Decimal::hypot(const Decimal& b) const {
 
-            if (_scale != decimal_scale()) {
-                return update_scale_copy().to_string();
-            }
+            return (operator*(*this) + (b * b)).root(2);
+        }
 
-            Integer qot, rem;
-            _number.div_rem(denominator(), qot, rem);
+        Decimal Decimal::hypot(const Decimal& b, const Decimal& c) const {
 
-            Text result = qot.to_string(0, -1);
-
-            if (rem.is()) {
-                result += "." + rem.to_string(0, -1);
-            }
-            else {
-                result += ".0";
-            }
-
-            return result;
+            return (operator*(*this) + (b * b) + (c * c)).root(2);
         }
 
         Decimal Decimal::ln() const {
@@ -599,7 +443,7 @@ namespace Olly {
                 return Decimal();
             }
             else if ((_number == integer_e())) {
-                return Decimal(denominator());
+                return Decimal(1);
             }
 
             if ((_number > denominator())) {
@@ -621,23 +465,455 @@ namespace Olly {
             return -get_ln();
         }
 
+        Decimal Decimal::log2() const {
+            return log(Decimal(2));
+        }
+
+        Decimal Decimal::log10() const {
+            return log(Decimal(10));
+        }
+
+        Decimal Decimal::log(const Decimal& b) const {
+            
+            if (is_defined() && is_positive()) {
+
+                Decimal a = ln() / b.ln();
+
+                Decimal c(a);
+
+                if (b.pow(c) == *this) {
+                    return c;
+                }
+
+                return a;
+            }
+
+            return Integer::UNDEF;
+        }
+
+        Decimal Decimal::sin() const {
+            
+            Decimal sin_x = abs();
+
+            Boolean neg = is_negative() ? true : false;
+
+            /*
+                First reduce value closure to 0.5
+                to improve speed of convergance.  
+            */
+
+            if (sin_x > decimal_360()) {
+                sin_x %= decimal_360();
+            }
+
+            if (sin_x > decimal_180()) {
+                sin_x %= decimal_180();
+                neg = !neg;
+            }
+
+            sin_x *= (decimal_pi() / decimal_180());  // Convert to radians.  
+
+            sin_x = sin_x.get_sin();
+
+            return neg ? -sin_x : sin_x;
+        }
+
+        Decimal Decimal::cos() const {
+
+            Decimal sin_x = sin();
+            Decimal one(1);
+
+            return (one - (sin_x * sin_x)).root(2); 
+        }
+
+        Decimal Decimal::tan() const {
+
+            Decimal one(1);
+            Decimal sin_x = sin();
+            Decimal cos_x = (one - (sin_x * sin_x)).root(2);
+
+            return sin_x / cos_x;
+        }
+
+
+        Decimal Decimal::asin() const {
+
+            Decimal asin_x = abs();
+
+            Boolean neg = is_negative() ? true : false;
+
+            /*
+                First reduce value closure to 0.5
+                to improve speed of convergance.
+            */
+
+            sys_int power_of_2 = 0;
+
+            Decimal limit("0.5");
+            Decimal one(ONE);
+            Decimal two(TWO);
+
+            while (asin_x > limit) {
+
+                asin_x = asin_x / (one + (one + asin_x * asin_x).root(two));
+
+                power_of_2 += 1;
+            }
+
+            asin_x = asin_x.get_asin() * two.pow(power_of_2);
+
+            return neg ? -asin_x : asin_x;
+        }
+
+        Decimal Decimal::acos() const {
+            
+            return (decimal_pi() / 2) - asin();
+        }
+
+        Decimal Decimal::atan() const {
+
+            Decimal sinh_x = abs();
+
+            Boolean neg = is_negative() ? true : false;
+
+            /*
+                First reduce value closure to 0.5
+                to improve speed of convergance.
+            */
+
+            sys_int power_of_2 = 0;
+
+            Decimal limit("0.1");
+            Decimal one(ONE);
+            Decimal two(TWO);
+
+            while (sinh_x > limit) {
+
+                sinh_x = sinh_x / (one + (one + sinh_x * sinh_x).root(two));
+
+                power_of_2 += 1;
+            }
+
+            sinh_x = sinh_x.get_atan() * two.pow(power_of_2);
+
+            return neg ? -sinh_x : sinh_x;
+        }
+
+        Decimal Decimal::sinh() const {
+            
+            Decimal sinh_x = abs();
+
+            Boolean neg = is_negative() ? true : false;
+
+            sinh_x = sinh_x.get_sinh();
+
+            return neg ? -sinh_x : sinh_x;
+        }
+
+        Decimal Decimal::cosh() const {
+
+            Decimal cosh_x = abs();
+
+            Boolean neg = is_negative() ? true : false;
+
+            cosh_x = cosh_x.get_cosh();
+
+            return neg ? -cosh_x : cosh_x;
+        }
+
+        Decimal Decimal::tanh() const {
+            return sinh() / cosh();
+        }
+
+        Decimal Decimal::asinh() const {
+            return (*this + ( *this * *this + 1).root(2)).ln();
+        }
+
+        Decimal Decimal::acosh() const {
+            return (*this + (*this * *this - 1).root(2)).ln();
+        }
+
+        Decimal Decimal::atanh() const {
+            return Decimal("0.5") * ((Decimal(1) + *this) / (Decimal(1) - *this)).ln();
+        }
+
+        Text Decimal::sign() const {
+            return _number.sign();
+        }
+
+        Text Decimal::to_string() const {
+            return to_string(10, -1);
+        }
+
+        Text Decimal::to_string(Size base, sys_int sign) const {
+
+            Integer qot, rem;
+            _number.div_rem(denominator(), qot, rem);
+
+            Text result = qot.to_string(0, -1);
+
+            Text decimal_string = rem.to_string(0, -1);
+
+            if (decimal_string.size() || decimal_string.size() < decimal_scale()) {
+
+                decimal_string.insert(0, decimal_scale() - decimal_string.size(), '0');
+            }
+
+            if (rem.is()) {
+                result += "." + decimal_string;
+            }
+            else {
+                result += ".0";
+            }
+
+            return result;
+        }
+
         const Integer& Decimal::get_Integer() const {
             return _number;
         }
 
-        void Decimal::set_decimal_text(Text& text) {
+        Decimal Decimal::get_ln() const {
+            /*
+                Perform a Taylor Series estimation of
+                the natural logorithm of this number.
+            */
 
-            lrtrim(text);
+            Decimal one(ONE);
+            Decimal two(TWO);
 
-            if (!text.empty()) {
+            Decimal x = (*this - one) / (*this + one); 
 
-                text = to_lower(text);
+            Decimal ln_x_iter = x;
+            Decimal ln_x      = x;
 
-                Integer exponent = get_sub_text_value(text, "e");
+            Decimal denominator(3);
 
-                Size scale = find_and_set_scale(text);
+            Decimal last_iter;
 
-                _number = Integer(text);
+            // Perform the calculation until the last 'last_iter' Decimal
+            // is the same as the current calculation 'ln_x'.  
+
+            while (last_iter != ln_x) {
+                last_iter = ln_x;
+
+                ln_x_iter *= x;
+                ln_x_iter *= x;
+
+                ln_x += (one / denominator) * ln_x_iter;
+
+                denominator += two;
+            }
+
+            return ln_x * two;
+        }
+
+        Decimal Decimal::get_sin() const {
+
+            Decimal one   = 1;
+            Decimal x     = *this;
+            Decimal sin_x = x;
+
+            Decimal sin_x_iter = x;
+
+            Decimal sin_power(3);
+            Decimal sin_factorial(6);
+
+            Decimal last;
+
+            // Perform the calculation until the last 'last_iter' Decimal
+            // is the same as the current calculation 'term'.  
+
+            while (last.get_Integer().get_Whole_Number() != sin_x.get_Integer().get_Whole_Number()) {
+
+                last = sin_x;
+
+                sin_x = -sin_x;
+
+                sin_x_iter *= x;
+                sin_x_iter *= x;
+
+                sin_x += (one / sin_factorial) * sin_x_iter;
+
+                sin_power     += one;
+                sin_factorial *= sin_power;
+
+                sin_power     += one;
+                sin_factorial *= sin_power;
+            }
+
+            return sin_x;
+        }
+
+        Decimal Decimal::get_asin() const {
+            
+            /*
+                Perform a Taylor Series estimation of
+                the natural logorithm of this number.
+            */
+
+            Decimal one(ONE);
+            Decimal two(TWO);
+
+            Decimal x = *this;
+            Decimal asin_x = x;
+
+            Decimal asin_x_iter = x;
+
+            Decimal asin_power(3);
+
+            Decimal num_coef(1);
+            Decimal den_coef(2);
+
+            Decimal last;
+
+            // Perform the calculation until the last 'last_iter' Decimal
+            // is the same as the current calculation 'term'.  
+
+            while (last.get_Integer().get_Whole_Number() != asin_x.get_Integer().get_Whole_Number()) {
+
+                last = asin_x;
+
+                // asin_x = -asin_x;
+
+                asin_x_iter *= x;
+                asin_x_iter *= x;
+
+                asin_x += (one / (den_coef * asin_power)) * (num_coef * asin_x_iter);
+
+                num_coef   *= asin_power;
+                asin_power += one;
+                den_coef   *= asin_power;
+                asin_power += one;
+            }
+
+            return asin_x;
+        }
+
+        Decimal Decimal::get_atan() const {
+
+            /*
+                Perform a Taylor Series estimation of
+                the natural logorithm of this number.
+            */
+
+            Decimal one(ONE);
+            Decimal two(TWO);
+
+            Decimal x = *this;
+            Decimal sinh_x = x;
+
+            Decimal sinh_x_iter = x;
+
+            Decimal atan_power(3);
+
+            Decimal last;
+
+            // Perform the calculation until the last 'last_iter' Decimal
+            // is the same as the current calculation 'term'.  
+
+            while (last.get_Integer().get_Whole_Number() != sinh_x.get_Integer().get_Whole_Number()) {
+
+                last = sinh_x;
+
+                sinh_x = -sinh_x;
+
+                sinh_x_iter *= x;
+                sinh_x_iter *= x;
+
+                sinh_x += (one / atan_power) * sinh_x_iter;
+
+                atan_power += two;
+            }
+
+            return sinh_x;
+        }
+
+        Decimal Decimal::get_sinh() const {
+
+            Decimal one = 1;
+            Decimal x = *this;
+            Decimal sinh_x = x;
+
+            Decimal sinh_x_iter = x;
+
+            Decimal sin_power(3);
+            Decimal sin_factorial(6);
+
+            Decimal last;
+
+            // Perform the calculation until the last 'last_iter' Decimal
+            // is the same as the current calculation 'term'.  
+
+            while (last.get_Integer().get_Whole_Number() != sinh_x.get_Integer().get_Whole_Number()) {
+
+                last = sinh_x;
+
+                sinh_x_iter *= x;
+                sinh_x_iter *= x;
+
+                sinh_x += (one / sin_factorial) * sinh_x_iter;
+
+                sin_power += one;
+                sin_factorial *= sin_power;
+
+                sin_power += one;
+                sin_factorial *= sin_power;
+            }
+
+            return sinh_x;
+        }
+
+        Decimal Decimal::get_cosh() const {
+
+            Decimal one = 1;
+            Decimal x = *this;
+            Decimal cosh_x = one;
+
+            Decimal cosh_x_iter = one;
+
+            Decimal cos_power(2);
+            Decimal cos_factorial(2);
+
+            Decimal last;
+
+            // Perform the calculation until the last 'last_iter' Decimal
+            // is the same as the current calculation 'term'.  
+
+            while (last.get_Integer().get_Whole_Number() != cosh_x.get_Integer().get_Whole_Number()) {
+
+                last = cosh_x;
+
+                cosh_x_iter *= x;
+                cosh_x_iter *= x;
+
+                cosh_x += (one / cos_factorial) * cosh_x_iter;
+
+                cos_power += one;
+                cos_factorial *= cos_power;
+
+                cos_power += one;
+                cos_factorial *= cos_power;
+            }
+
+            return cosh_x;
+        }
+
+        void Decimal::set_integer(Text& value) {
+            _number = Integer(value) * denominator();
+        }
+
+        void Decimal::set_decimal(Text& value) {
+
+            lrtrim(value);
+
+            if (!value.empty()) {
+
+                Integer exponent = get_sub_text_value(value, "e");
+
+                Size scale = find_and_set_scale(value);
+
+                _number = Integer(value);
 
                 if (scale < decimal_scale()) {
                     _number = _number * (denominator() / TEN.pow(scale));
@@ -645,6 +921,61 @@ namespace Olly {
 
                 set_decimal_exponent(exponent);
             }
+        }
+
+        void Decimal::set_rational(Text& value) {
+
+            // Locate and set the denominator.
+            Integer den(get_sub_text_value(value, "/"));
+
+            if (!den.is()) {
+                _number = Integer::UNDEF;
+                return;
+            }
+
+            lrtrim(value);
+
+            // Look if a leading integer is present and get it.
+            Text lead_val_str = "";
+
+            auto found = value.find_last_of(' ');
+
+            if (found != std::string::npos) {
+
+                lead_val_str = value.substr(0, found);
+
+                value.erase(0, found);
+            }
+
+            // Define the leading integer.
+            Integer lead_value(lead_val_str);
+
+            _number = Integer(value);
+
+            // Add any leading value to the number.
+            if (lead_value.is()) {
+
+                _number = _number + (lead_value * den);
+            }
+
+            _number *= denominator();
+            _number /= den;
+        }
+
+        void Decimal::set_whole(Text& value) {
+            _number = Integer(value, 10);
+        }
+
+        void Decimal::set_binary(Text& value) {
+            _number = Integer(value, 2);
+        }
+
+        void Decimal::set_octal(Text& value) {
+            _number = Integer(value, 8);
+        }
+
+        void Decimal::set_heximal(Text& value) {
+            _number = Integer(value, 16);
         }
 
         void Decimal::set_decimal_exponent(Integer& exponent) {
@@ -718,66 +1049,6 @@ namespace Olly {
             }
 
             return scale;
-        }
-
-        Decimal& Decimal::update_scale() {
-
-            if (_scale < scale()) {
-
-                _number *= TEN.pow(decimal_scale() - _scale);
-            }
-
-            else {
-                _number /= TEN.pow(_scale - decimal_scale());
-            }
-
-            _scale = decimal_scale();
-
-            return *this;
-        }
-
-        Decimal Decimal::update_scale_copy() const {
-
-            Decimal a(*this);
-
-            a.update_scale();
-
-            return a;
-        }
-
-        Decimal Decimal::get_ln() const {
-            /*
-                Perform a Taylor Series estimation of
-                the natural logorithm of this number.
-            */
-
-            Decimal one(ONE);
-            Decimal two(TWO);
-
-            Decimal x = (*this - one) / (*this + one);
-
-            Decimal a = x;   // Derivative of x = a;
-            Decimal term = x;
-
-            Decimal power(3);
-
-            Decimal last_iter;
-
-            // Perform the calculation until the last 'last_iter' Decimal
-            // is the same as the current calculation 'term'.  
-
-            while (last_iter != term) {
-                last_iter = term;
-
-                a *= x;  // Update the derivative.
-                a *= x;
-
-                term += (one / power) * a;
-
-                power += two;
-            }
-
-            return term * two;
         }
     }
 }  // end Olly

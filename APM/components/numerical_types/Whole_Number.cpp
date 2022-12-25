@@ -448,10 +448,16 @@ namespace Olly {
 
         Whole_Number Whole_Number::pow(Size b) const {
 
+            if (b == 2) {
+                Whole_Number a = *this;
+                return a * a;
+            }
+
             if (b == 1) {
                 return *this;
             }
-            else if (b == 0) {
+            
+            if (b == 0) {
                 return 1;
             }
 

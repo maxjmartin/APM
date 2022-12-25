@@ -59,10 +59,10 @@ namespace Olly {
             Decimal(Text value);
             virtual ~Decimal();
 
-            Decimal(Decimal&& obj)                 = default;
-            Decimal(const Decimal& obj)            = default;
+            Decimal(Decimal&& obj) = default;
+            Decimal(const Decimal& obj) = default;
             Decimal& operator=(const Decimal& obj) = default;
-            Decimal& operator=(Decimal&& obj)      = default;
+            Decimal& operator=(Decimal&& obj) = default;
 
             Boolean is() const;
 
@@ -71,6 +71,11 @@ namespace Olly {
             Boolean is_positive() const;
             Boolean is_negative() const;
             Boolean is_zero()     const;
+            Boolean is_undefined() const;
+            Boolean is_defined()   const;
+            Boolean is_nan()       const;
+            Boolean is_finite()    const;
+            Boolean is_infinite()  const;
 
             Boolean operator==(const Decimal& b) const;
             Boolean operator!=(const Decimal& b) const;
@@ -97,21 +102,56 @@ namespace Olly {
             Decimal operator%(const Decimal& b) const;
 
             void div_rem(const Decimal& b, Decimal& qot, Decimal& rem) const;
-            void num_den(Decimal& num, Decimal& den)                   const;
 
-            Decimal pow(Size b) const;
+            //decimal hypot(const decimal& b)                    const;
+            //decimal hypot(const decimal& b, const decimal& c) const;
+
+            //decimal    ln()                 const;
+            //decimal  log2()                 const;
+            //decimal log10()                 const;
+            //decimal   log(const decimal& b) const;
+
+            //decimal sin() const;
+            //decimal cos() const;
+            //decimal tan() const;
+
+            //decimal round(const decimal& scale) const;
 
             Decimal abs()       const;
             Decimal inverse()   const;
             Decimal ceil()      const;
             Decimal floor()     const;
-            // Decimal factorial() const;
+
+            Decimal gcd  (const Decimal& b)                   const;
+            Decimal pow  (const Decimal& b)                   const;
+            Decimal root (const Decimal& b)                   const;
+            Decimal hypot(const Decimal& b)                   const;
+            Decimal hypot(const Decimal& b, const Decimal& c) const;
+
+            Decimal    ln()                 const;
+            Decimal  log2()                 const;
+            Decimal log10()                 const;
+            Decimal   log(const Decimal& b) const;
+
+            Decimal sin() const;
+            Decimal cos() const;
+            Decimal tan() const;
+
+            Decimal asin() const;
+            Decimal acos() const;
+            Decimal atan() const;
+
+            Decimal sinh() const;
+            Decimal cosh() const;
+            Decimal tanh() const;
+
+            Decimal asinh() const;
+            Decimal acosh() const;
+            Decimal atanh() const;
 
             Text sign()                             const;
             Text to_string()                        const;
             Text to_string(Size base, sys_int sign) const;
-
-            Decimal    ln()                 const;
 
             template<typename N>
             N to_integral() const;
@@ -124,7 +164,8 @@ namespace Olly {
             static const Integer TWO;
             static const Integer TEN;
 
-            static const Size DEF_SCALE = 16;
+            static const Size DEF_VIEW  = 16;
+            static const Size DEF_SCALE = 32;
             static const Size MIN_SCALE = 8;
             static const Size MAX_SCALE = 10000;
 
@@ -139,33 +180,42 @@ namespace Olly {
             static Decimal& decimal_pi();
             static Decimal& decimal_e();
             static Decimal& decimal_ln2();
+            static Decimal& decimal_360();
+            static Decimal& decimal_180();
+            static Decimal& decimal_45();
 
             static ROUNDING_MODE& round_mode();
 
             Integer _number;
-            Size    _scale;
 
             Decimal(sys_int value);
             Decimal(const Integer& value);
             Decimal(const Whole_Number& value);
 
-            void set_decimal_text(Text& text);
-            void set_decimal_exponent(Integer& exponent);
+            Decimal get_ln()   const;
+            Decimal get_sin()  const;
+            Decimal get_asin() const;
+            Decimal get_atan() const;
+            Decimal get_sinh() const;
+            Decimal get_cosh() const;
 
+            void set_integer(Text& value);
+            void set_decimal(Text& value);
+            void set_rational(Text& value);
+            void set_whole(Text& value);
+            void set_binary(Text& value);
+            void set_octal(Text& value);
+            void set_heximal(Text& value);
+
+            void  set_decimal_exponent(Integer& exponent);
             Integer get_sub_text_value(Text& value, Text del) const;
-
-            Size find_and_set_scale(Text& value) const;
-
-            Decimal& update_scale();
-            Decimal  update_scale_copy() const;
-
-            Decimal get_ln() const;
+            Size    find_and_set_scale(Text& value)           const;
         };
 
         template<typename N>
         inline N Decimal::to_integral() const {
 
-            N a = _number.to_integral<N>();
+            N a = (_number / denominator()).to_integral<N>();
 
             if (std::is_signed<N>::value && is_negative()) {
 
